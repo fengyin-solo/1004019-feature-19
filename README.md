@@ -15,6 +15,7 @@
 │   ├── src/views/            每个业务模块一个页面
 │   ├── src/api/local-service.ts   本地数据服务：列表、筛选、动作流转、导出
 │   ├── src/data/             模块元数据 / 示例数据 / localStorage 持久化
+│   │   └── qualification/    资质归档包：类型 / 种子 / 存储 / ZIP / 业务规则
 │   ├── src/stores/           会话与筛选状态
 │   └── vite.config.ts        dev server 配置（open: false，无 /api 代理）
 ├── .gitignore
@@ -60,6 +61,22 @@ npm run build
 | 设施档案 | `facility_archive` | 设施档案 | 档案编号、设施名称、设施类别 |
 | 监测设备 | `monitor_device` | 监测设备 | 设备编号、设备类型、安装位置 |
 | 施工队伍 | `contractor` | 施工队伍 | 队伍编号、队伍名称、资质等级 |
+| 资质文件归档 | `qualification` | 资质归档包/备案记录/退场核查事项 | 队伍编号、资质等级、特种作业证、所属企业材料 |
+
+### 资质文件归档包规则
+
+`资质文件归档`（`frontend/src/views/qualification/`）围绕施工队伍资质做闭环管理，业务规则全部收敛在
+`frontend/src/data/qualification/qualification-service.ts`：
+
+- **打包下载**：把队伍编号、资质等级、特种作业证、所属企业材料四类材料（附归档说明与 manifest）打成
+  ZIP 下载（零依赖 ZIP 生成，见 `data/qualification/zip.ts`），审核人补充证件信息后再上传。
+- **逐条校验**：上传按固定四步进行，系统逐条校验证件有效期（过期/格式）、作业范围（须覆盖管网施工养护）、
+  所属企业（须与队伍登记企业一致）以及队伍编号一致性。
+- **重复去重**：整包文件与现行备案一致时不生成第二份备案记录；内容有变才追加版本，旧资质整包快照
+  按历史版本永久保留（备案记录按队伍唯一）。
+- **作业联动**：资质过期或证照缺失时不能审核备案、不能安排作业；已经在作业中的队伍自动生成
+  「退场核查事项」（幂等不重复开单），确认退场后联动施工队伍清退。
+- **断点续传**：上传中断会标出完成到第几步并持久化会话，可从中断/失败条目继续，已通过的步骤不重传。
 
 ## 约定
 
@@ -67,5 +84,8 @@ npm run build
   `frontend/src/api/local-service.ts`。
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
   `frontend/src/data/seed.ts`。
-- 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
-- 想回到初始数据：清掉浏览器里 `underground-pipeline-inspection:entries` 这一项，或调用 `resetModule(模块)`。
+- 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断；资质归档相关流转在
+  `data/qualification/qualification-service.ts`。
+- 想回到初始数据：清掉浏览器里 `underground-pipeline-inspection:entries` 和
+  `underground-pipeline-inspection:qualification` 两项，或调用 `resetModule(模块)`。
+  调整示例数据时抬升 `local-store.ts` 里的 `SEED_VERSION`，旧缓存会自动重建。

@@ -19,6 +19,7 @@ const PipeCleaning = () => import('@/views/pipe_cleaning/index.vue')
 const FacilityArchive = () => import('@/views/facility_archive/index.vue')
 const MonitorDevice = () => import('@/views/monitor_device/index.vue')
 const Contractor = () => import('@/views/contractor/index.vue')
+const Qualification = () => import('@/views/qualification/index.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -42,6 +43,7 @@ const router = createRouter({
     { path: '/facility_archive', name: 'facility_archive', component: FacilityArchive },
     { path: '/monitor_device', name: 'monitor_device', component: MonitorDevice },
     { path: '/contractor', name: 'contractor', component: Contractor },
+    { path: '/qualification', name: 'qualification', component: Qualification },
   ],
 })
 
