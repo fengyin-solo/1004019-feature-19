@@ -1,5 +1,6 @@
 import { MODULE_BY_KEY } from '@/data/modules'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
+import { contractorGate, ensureExitCheck } from '@/api/qualification-service'
 import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
 
 // 会写进数据的「往回走」动作：命中就把这条记录标成异常态，看板上能一眼看出来。
@@ -42,6 +43,17 @@ export function runAction(key: string, id: number, action: string): ActionResult
   const current = String(rows[index].status)
   if (current === target) {
     return { ok: false, message: `${meta.entity}已经是「${target}」，不用重复操作` }
+  }
+  // 施工队伍安排作业前必须过资质闸门：资质过期或证照缺失一律拦下。
+  if (key === 'contractor' && action === '安排作业') {
+    const gate = contractorGate(id)
+    if (!gate.allowed) {
+      // 闸门被拦时队伍仍是作业中（极少数状态漂移场景），同样补一条退场核查。
+      if (current === '作业中') {
+        ensureExitCheck(id, gate, '资质巡检', gate.latest?.id)
+      }
+      return { ok: false, message: gate.message }
+    }
   }
   const lastStatus = meta.statuses[meta.statuses.length - 1]
   const updated: EntryRow = {

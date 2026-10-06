@@ -7,6 +7,7 @@
       </div>
       <div class="page-actions">
         <button class="btn primary" type="button" @click="openCreate">登记施工队伍</button>
+        <button class="btn" type="button" @click="goArchive">资质文件归档</button>
         <button class="btn" type="button" @click="exportRows">导出施工队伍清单</button>
       </div>
     </header>
@@ -55,6 +56,7 @@
             >
               {{ action }}
             </button>
+            <button class="link" type="button" @click="downloadPackage(row)">下载归档包</button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -72,6 +74,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import {
   downloadEntries,
@@ -79,8 +82,10 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { downloadPackage } from '@/api/qualification-service'
 import type { EntryRow } from '@/data/types'
 
+const router = useRouter()
 const meta = moduleMeta('contractor')
 const columns = ["队伍编号", "队伍名称", "资质等级", "所属企业", "联系人", "联系电话", "特种作业证", "队伍状态"]
 const actions = ["审核备案", "安排作业", "清退队伍"]
@@ -106,6 +111,10 @@ function resetFilters() {
 
 function exportRows() {
   downloadEntries(meta.key)
+}
+
+function goArchive() {
+  router.push('/contractor/qualification')
 }
 
 function openCreate() {
